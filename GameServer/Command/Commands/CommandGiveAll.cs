@@ -1,4 +1,5 @@
 ﻿using MikuSB.Data;
+using MikuSB.Database;
 using MikuSB.Database.Inventory;
 using MikuSB.Enums.Item;
 using MikuSB.Enums.Player;
@@ -42,6 +43,7 @@ public class CommandGiveAll : ICommands
             weapons.Add(weapon);
         }
         if (weapons.Count > 0) await player.SendPacket(new PacketNtfCallScript(weapons));
+        DatabaseHelper.SaveDatabaseType(player.InventoryManager.InventoryData);
         await arg.SendMsg(I18NManager.Translate("Game.Command.GiveAll.GiveAllItems",
             I18NManager.Translate("Word.Weapon"), weapons.Count.ToString()));
     }
@@ -77,6 +79,7 @@ public class CommandGiveAll : ICommands
             supportCards.Add(supportCard);
         }
         if (supportCards.Count > 0) await player.SendPacket(new PacketNtfCallScript(supportCards));
+        DatabaseHelper.SaveDatabaseType(player.InventoryManager.InventoryData);
         await arg.SendMsg(I18NManager.Translate("Game.Command.GiveAll.GiveAllItems",
             I18NManager.Translate("Word.SupportCard"), supportCards.Count.ToString()));
     }
@@ -111,6 +114,7 @@ public class CommandGiveAll : ICommands
             weaponSkins.Add(weaponSkin);
         }
         if (weaponSkins.Count > 0) await player.SendPacket(new PacketNtfCallScript(weaponSkins));
+        DatabaseHelper.SaveDatabaseType(player.InventoryManager.InventoryData);
         await arg.SendMsg(I18NManager.Translate("Game.Command.GiveAll.GiveAllItems",
             I18NManager.Translate("Word.WeaponSkin"), weaponSkins.Count.ToString()));
     }
@@ -147,6 +151,7 @@ public class CommandGiveAll : ICommands
             profileItems.Add(profile);
         }
         if (profileItems.Count > 0) await player.SendPacket(new PacketNtfCallScript(profileItems));
+        DatabaseHelper.SaveDatabaseType(player.InventoryManager.InventoryData);
         await arg.SendMsg(I18NManager.Translate("Game.Command.GiveAll.GiveAllItems",
             I18NManager.Translate("Word.Profile"), profileItems.Count.ToString()));
     }
@@ -183,6 +188,7 @@ public class CommandGiveAll : ICommands
             skinPartItems.Add(skinPart);
         }
         if (skinPartItems.Count > 0) await player.SendPacket(new PacketNtfCallScript(skinPartItems));
+        DatabaseHelper.SaveDatabaseType(player.InventoryManager.InventoryData);
         await arg.SendMsg(I18NManager.Translate("Game.Command.GiveAll.GiveAllItems",
             I18NManager.Translate("Word.SkinPart"), skinPartItems.Count.ToString()));
     }
@@ -219,6 +225,7 @@ public class CommandGiveAll : ICommands
             callItems.Add(callItem);
         }
         if (callItems.Count > 0) await player.SendPacket(new PacketNtfCallScript(callItems));
+        DatabaseHelper.SaveDatabaseType(player.InventoryManager.InventoryData);
         await arg.SendMsg(I18NManager.Translate("Game.Command.GiveAll.GiveAllItems",
             I18NManager.Translate("Word.CallItem"), callItems.Count.ToString()));
     }
@@ -255,7 +262,82 @@ public class CommandGiveAll : ICommands
             weaponPartItems.Add(weaponPart);
         }
         if (weaponPartItems.Count > 0) await player.SendPacket(new PacketNtfCallScript(weaponPartItems));
+        DatabaseHelper.SaveDatabaseType(player.InventoryManager.InventoryData);
         await arg.SendMsg(I18NManager.Translate("Game.Command.GiveAll.GiveAllItems",
             I18NManager.Translate("Word.WeaponPart"), weaponPartItems.Count.ToString()));
+    }
+
+    [CommandMethod("skin")]
+    public async ValueTask GiveAllSkin(CommandArg arg)
+    {
+        if (!await arg.CheckOnlineTarget()) return;
+        if (await arg.GetOption('p') is not int particular) return;
+        if (await arg.GetOption('l') is not int level) return;
+        if (await arg.GetOption('g') is not int genre) return;
+
+        var detail = arg.GetInt(0);
+        var player = arg.Target!.Player!;
+        List<GameSkinInfo> skinItems = [];
+        if (detail == -1)
+        {
+            // add all
+            foreach (var config in GameData.CardSkinData.Values)
+            {
+                var skin = await player.InventoryManager!
+                    .AddSkinItem((ItemTypeEnum)config.Genre, config.Detail, config.Particular, config.Level, false);
+                if (skin != null) skinItems.Add(skin);
+            }
+        }
+        else
+        {
+            var skin = await player.InventoryManager!.AddSkinItem((ItemTypeEnum)genre, (uint)detail, (uint)particular, (uint)level, false);
+            if (skin == null)
+            {
+                await arg.SendMsg(I18NManager.Translate("Game.Command.GiveAll.NotFound", I18NManager.Translate("Word.Skin")));
+                return;
+            }
+            skinItems.Add(skin);
+        }
+        if (skinItems.Count > 0) await player.SendPacket(new PacketNtfCallScript(skinItems));
+        DatabaseHelper.SaveDatabaseType(player.InventoryManager.InventoryData);
+        await arg.SendMsg(I18NManager.Translate("Game.Command.GiveAll.GiveAllItems",
+            I18NManager.Translate("Word.Skin"), skinItems.Count.ToString()));
+    }
+
+    [CommandMethod("furniture")]
+    public async ValueTask GiveAllHouseFurniture(CommandArg arg)
+    {
+        if (!await arg.CheckOnlineTarget()) return;
+        if (await arg.GetOption('p') is not int particular) return;
+        if (await arg.GetOption('l') is not int level) return;
+        if (await arg.GetOption('g') is not int genre) return;
+
+        var detail = arg.GetInt(0);
+        var player = arg.Target!.Player!;
+        List<BaseGameItemInfo> furnitureItems = [];
+        if (detail == -1)
+        {
+            // add all
+            foreach (var config in GameData.DormGiftData.Values)
+            {
+                var furniture = await player.InventoryManager!
+                    .AddHouseFurnitureItem((ItemTypeEnum)config.Genre, config.Detail, config.Particular, config.Level, false);
+                if (furniture != null) furnitureItems.Add(furniture);
+            }
+        }
+        else
+        {
+            var furniture = await player.InventoryManager!.AddHouseFurnitureItem((ItemTypeEnum)genre, (uint)detail, (uint)particular, (uint)level, false);
+            if (furniture == null)
+            {
+                await arg.SendMsg(I18NManager.Translate("Game.Command.GiveAll.NotFound", I18NManager.Translate("Word.Furniture")));
+                return;
+            }
+            furnitureItems.Add(furniture);
+        }
+        if (furnitureItems.Count > 0) await player.SendPacket(new PacketNtfCallScript(furnitureItems));
+        DatabaseHelper.SaveDatabaseType(player.InventoryManager.InventoryData);
+        await arg.SendMsg(I18NManager.Translate("Game.Command.GiveAll.GiveAllItems",
+            I18NManager.Translate("Word.Furniture"), furnitureItems.Count.ToString()));
     }
 }
